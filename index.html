@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Smart Farm Chatbot – Firebase x GPT-4o</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg:#e5f0ff;
+      --panel:#f9fafb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#6b7280;
+      --accent:#16a34a;
+      --blue:#2563eb;
+      --border:#d1d5db;
+      --shadow:0 12px 30px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(135deg,#e5f0ff,#f9fafb);
+      font:15px/1.6 system-ui,Segoe UI,Roboto;
+      color:var(--text);
+      user-select:none
+    }
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 8px var(--accent)
+    }
+    h1{margin:0;font-size:19px}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      box-shadow:var(--shadow)
+    }
+    .card h3{
+      margin:0;
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      background:#edf2ff;
+      font-size:15px
+    }
+    .msgs{height:68vh;overflow:auto;padding:12px;background:#f3f4ff}
+    .msg{display:flex;gap:10px;margin:8px 0}
+    .avatar{
+      width:34px;height:34px;border-radius:50%;
+      display:grid;place-items:center;
+      font-weight:700;color:#fff;
+      background:#64748b
+    }
+    .user .avatar{background:var(--blue)}
+    .bubble{
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      padding:10px 12px;
+      border-radius:12px;
+      max-width:80%;
+      white-space:pre-wrap;
+      color:#111827
+    }
+    .user .bubble{
+      background:#2563eb;
+      border-color:#2563eb;
+      color:#ffffff
+    }
+    .input{
+      display:flex;gap:8px;
+      padding:10px;
+      border-top:1px solid var(--border);
+      background:var(--panel)
+    }
+    .input input{
+      flex:1;
+      background:#ffffff;
+      border:1px solid var(--border);
+      color:#111827;
+      border-radius:10px;
+      padding:10px 12px;
+      outline:none
+    }
+    .input input::placeholder{color:var(--muted)}
+    .input button{
+      background:var(--accent);
+      border:0;
+      border-radius:10px;
+      padding:10px 16px;
+      color:#052e14;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(22,163,74,.35)
+    }
+    .input button:active{transform:scale(.97)}
+    .panel{padding:12px;font-size:14px;line-height:1.6;background:#fdfefe}
+    .farm{
+      margin-bottom:16px;
+      border-bottom:1px solid #e5e7eb;
+      padding-bottom:10px
+    }
+    .farm:last-child{border-bottom:0;padding-bottom:0}
+    .farm h4{margin:0 0 6px 0;color:#0f172a;font-weight:600}
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;margin-bottom:6px
+    }
+    .m{
+      background:#f3f4ff;
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:8px;
+      text-align:center
+    }
+    .m .v{font-weight:700;font-size:16px;color:#111827}
+    .m div:first-child{font-size:12px;color:var(--muted)}
+    .devs{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid #e5e7eb;
+      background:#f9fafb;
+      font-size:12px
+    }
+    .pill.on{
+      background:rgba(34,197,94,.12);
+      border-color:#16a34a;
+      color:#166534;
+      font-weight:600
+    }
+    .pill.off{
+      background:#f3f4f6;
+      color:#6b7280
+    }
+    .mode-row{
+      margin-top:6px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap
+    }
+    .mode-label{font-size:12px;color:#6b7280}
+    .mode-pill{
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:600
+    }
+    .mode-auto{
+      background:rgba(37,99,235,.08);
+      color:#1d4ed8;
+      border:1px solid #93c5fd
+    }
+    .mode-man{
+      background:rgba(234,179,8,.12);
+      color:#92400e;
+      border:1px solid #facc15
+    }
+    .mode-btn{
+      padding:5px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#ffffff;
+      font-size:12px;
+      cursor:pointer;
+      color:#374151
+    }
+    .mode-btn.active{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#052e14;
+      font-weight:600
+    }
+    .manual-row{
+      margin-top:8px;
+      display:flex;
+      flex-direction:column;
+      gap:6px
+    }
+    .switch-line{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:13px
+    }
+    .switch-label{
+      min-width:60px;
+      font-weight:500;
+      color:#111827
+    }
+    .switch{
+      position:relative;
+      width:46px;
+      height:24px;
+      border-radius:999px;
+      background:#e5e7eb;
+      border:1px solid #d1d5db;
+      cursor:pointer;
+      transition:background .18s,border-color .18s
+    }
+    .switch-knob{
+      position:absolute;
+      top:2px;
+      left:2px;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:#ffffff;
+      box-shadow:0 1px 3px rgba(0,0,0,.25);
+      transition:left .18s
+    }
+    .switch.on{
+      background:#16a34a;
+      border-color:#16a34a
+    }
+    .switch.on .switch-knob{
+      left:24px
+    }
+    .switch.disabled{
+      opacity:.45;
+      cursor:not-allowed
+    }
+    .switch-text{
+      font-size:12px;
+      color:#374151
+    }
+    .chart-box{
+      border-top:1px solid #e5e7eb;
+      padding:10px 12px 12px 12px;
+      background:#f9fafb
+    }
+    .chart-header{
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:6px;
+      color:#0f172a
+    }
+    .chart-tabs{
+      display:flex;
+      gap:8px;
+      margin-bottom:8px
+    }
+    .chart-tab-btn{
+      padding:4px 12px;
+      border-radius:999px;
+      border:1px solid #d1d5db;
+      background:#ffffff;
+      font-size:12px;
+      cursor:pointer;
+      color:#374151
+    }
+    .chart-tab-btn.active{
+      background:#2563eb;
+      border-color:#2563eb;
+      color:#ffffff;
+      font-weight:600
+    }
+    .chart-ranges{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-bottom:6px
+    }
+    .range-btn{
+      padding:3px 10px;
+      border-radius:999px;
+      border:1px solid #d1d5db;
+      background:#ffffff;
+      font-size:11px;
+      cursor:pointer;
+      color:#374151
+    }
+    .range-btn.active{
+      background:#16a34a;
+      border-color:#16a34a;
+      color:#f9fafb;
+      font-weight:600
+    }
+    .chart-wrap{
+      width:100%;
+      max-height:260px
+    }
+    #farmChart{
+      width:100%;
+      height:240px
+    }
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .msgs{height:50vh}
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="dot"></div>
+    <h1>Smart Farm Chatbot – Firebase Realtime</h1>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Chat</h3>
+      <div id="msgs" class="msgs"></div>
+      <div class="input">
+        <input id="inp" placeholder="Ví dụ: 'Hôm qua độ ẩm đất vườn C thế nào?'">
+        <button id="send">Gửi</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Dữ liệu vườn + Biểu đồ</h3>
+      <div id="panel" class="panel"></div>
+      <div class="chart-box">
+        <div class="chart-header">Biểu đồ lịch sử theo vườn</div>
+        <div class="chart-tabs">
+          <button class="chart-tab-btn active" data-node="A" onclick="setChartFarm('A')">Vườn A</button>
+          <button class="chart-tab-btn" data-node="B" onclick="setChartFarm('B')">Vườn B</button>
+          <button class="chart-tab-btn" data-node="C" onclick="setChartFarm('C')">Vườn C</button>
+        </div>
+        <div class="chart-ranges">
+          <button class="range-btn active" data-range="live" onclick="setChartRange('live')">Live</button>
+          <button class="range-btn" data-range="1p" onclick="setChartRange('1p')">1 phút</button>
+          <button class="range-btn" data-range="30p" onclick="setChartRange('30p')">30 phút</button>
+          <button class="range-btn" data-range="1h" onclick="setChartRange('1h')">1 giờ</button>
+          <button class="range-btn" data-range="6h" onclick="setChartRange('6h')">6 giờ</button>
+          <button class="range-btn" data-range="12h" onclick="setChartRange('12h')">12 giờ</button>
+          <button class="range-btn" data-range="24h" onclick="setChartRange('24h')">24 giờ</button>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="farmChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.oncontextmenu = () => false;
+document.onkeydown = e => {
+  if (e.key === "F12" ||
+      (e.ctrlKey && e.shiftKey && e.key === "I") ||
+      (e.ctrlKey && e.key === "U") ||
+      (e.ctrlKey && e.shiftKey && e.key === "J")) {
+    e.preventDefault();
+    return false;
+  }
+};
+
+const OPENAI_API_KEY = "";
+const MODEL_NAME     = "gpt-4o";
+
+const firebaseConfig = {
+  databaseURL: "https://smartfarm-chatbot-default-rtdb.firebaseio.com/"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const API_JSON_URL = "https://nguyenlyphuongtai.gt.tc/api.php";
+
+const WEATHER_LAT = 10.8231;
+const WEATHER_LON = 106.6297;
+const WEATHER_TZ  = "Asia/Ho_Chi_Minh";
+
+/* ====== PANEL / FIREBASE ====== */
+
+const panelEl=document.getElementById("panel");
+let globalData=null;
+let lastPanelHash=null;
+let onlineTimer=null;
+
+function renderPanel(data){
+  let html="";
+  ["A","B","C"].forEach(n=>{
+    const sensors=data && data.sensors && data.sensors[n] ? data.sensors[n] : {};
+    const devices=data && data.devices && data.devices[n] ? data.devices[n] : {};
+    const airTemp = sensors.air_temp_c !== undefined ? sensors.air_temp_c : "--";
+    const airHumi = sensors.air_humi   !== undefined ? sensors.air_humi   : "--";
+    const soilPct = sensors.soil_pct   !== undefined ? sensors.soil_pct   : "--";
+    const pumpState  = devices.pump  && devices.pump.state  ? devices.pump.state  : "off";
+    const lightState = devices.light && devices.light.state ? devices.light.state : "off";
+    let mode = devices.mode || "auto";
+    const isAuto = mode==="auto";
+
+    html+=`<div class="farm">
+      <h4>Vườn ${n}</h4>
+      <div class="metrics">
+        <div class="m"><div>Nhiệt độ</div><div class="v">${airTemp}°C</div></div>
+        <div class="m"><div>Độ ẩm</div><div class="v">${airHumi}%</div></div>
+        <div class="m"><div>Độ ẩm đất</div><div class="v">${soilPct}%</div></div>
+      </div>
+      <div class="devs">
+        <div class="pill ${pumpState}">Bơm: ${pumpState}</div>
+        <div class="pill ${lightState}">Đèn: ${lightState}</div>
+      </div>
+      <div class="mode-row">
+        <div class="mode-label">Chế độ:</div>
+        <div class="mode-pill ${mode==="auto"?"mode-auto":"mode-man"}">${mode==="auto"?"AUTO":"MAN"}</div>
+        <button class="mode-btn ${mode==="auto"?"active":""}" onclick="setFarmMode('${n}','auto')">AUTO</button>
+        <button class="mode-btn ${mode==="man"?"active":""}" onclick="setFarmMode('${n}','man')">MAN</button>
+      </div>
+      <div class="manual-row">
+        <div class="switch-line">
+          <div class="switch-label">Bơm</div>
+          <div class="switch ${pumpState==="on"?"on":""} ${isAuto?"disabled":""}"
+               onclick="handleSwitchClick('${n}','pump','${isAuto?"true":"false"}')">
+            <div class="switch-knob"></div>
+          </div>
+          <div class="switch-text">${pumpState}</div>
+        </div>
+        <div class="switch-line">
+          <div class="switch-label">Đèn</div>
+          <div class="switch ${lightState==="on"?"on":""} ${isAuto?"disabled":""}"
+               onclick="handleSwitchClick('${n}','light','${isAuto?"true":"false"}')">
+            <div class="switch-knob"></div>
+          </div>
+          <div class="switch-text">${lightState}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  panelEl.innerHTML=html;
+}
+
+function logSnapshotToJson(snapshot){
+  if(!snapshot)return;
+  const now = new Date();
+  const ts_utc = now.toISOString();
+  const ts_vn = new Date(now.getTime() + 7*60*60*1000).toISOString();
+  const payload={action:"log",ts:ts_utc,ts_vn:ts_vn,data:snapshot};
+  fetch(API_JSON_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  }).catch(()=>{});
+}
+
+db.ref("data").on("value",snap=>{
+  const val=snap.val() || {};
+  const devicesPart=val.devices || {};
+  const sensorsPart=val.sensors || {};
+  const panelHash=JSON.stringify({devices:devicesPart,sensors:sensorsPart});
+  globalData=val;
+  if(panelHash!==lastPanelHash){
+    lastPanelHash=panelHash;
+    renderPanel(globalData);
+  }
+  const isOnline = val.online===1 || val.online===true || val.online==="1";
+  if(isOnline){
+    logSnapshotToJson(globalData);
+    if(onlineTimer)clearTimeout(onlineTimer);
+    onlineTimer=setTimeout(()=>{
+      db.ref("data/online").set(0);
+    },10000);
+  }
+});
+
+/* ====== CHAT + LƯU LOCALSTORAGE ====== */
+
+const msgs=document.getElementById("msgs");
+const inp=document.getElementById("inp");
+const send=document.getElementById("send");
+
+const CHAT_KEY="smartfarm_chat_history_v1";
+let chatHistory=[];
+let convo=[];
+let pending=null;
+
+function saveChatHistory(){
+  try{
+    localStorage.setItem(CHAT_KEY,JSON.stringify(chatHistory));
+  }catch(e){}
+}
+
+function addMsg(role,text,skipStore){
+  const row=document.createElement("div");
+  row.className=`msg ${role}`;
+  const label=role==="user"?"U":"B";
+  row.innerHTML=`<div class="avatar">${label}</div><div class="bubble">${text}</div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop=msgs.scrollHeight;
+  if(!skipStore){
+    chatHistory.push({role,text});
+    saveChatHistory();
+  }
+}
+
+function loadChatHistory(){
+  try{
+    const raw=localStorage.getItem(CHAT_KEY);
+    if(!raw)return;
+    const arr=JSON.parse(raw);
+    if(!Array.isArray(arr))return;
+    chatHistory=arr;
+    arr.forEach(item=>{
+      addMsg(item.role,item.text,true);
+    });
+    const forConvo=arr.slice(-10);
+    forConvo.forEach(item=>{
+      if(item.role==="user"){
+        convo.push({role:"user",content:item.text});
+      }else if(item.role==="bot"){
+        convo.push({role:"assistant",content:item.text});
+      }
+    });
+  }catch(e){}
+}
+
+loadChatHistory();
+
+/* ====== PROMPT GPT (GIU NGUYEN) ====== */
+
+function buildSystemPrompt(){
+return(`You are a smart farm assistant that manages three farms: A, B, C.
+You perfectly understand Vietnamese natural language (normal talk, short phrases, emotional tone) and map it into structured JSON commands.
+
+Return a JSON object (English keys only) with:
+{
+ "intent": "device_control | ask_sensor | ask_device_state | ask_history | unknown",
+ "node": "A | B | C | ALL | null",
+ "target": "pump | light | air_temp_c | air_humi | soil_pct | null",
+ "action": "on | off | null",
+ "duration": <seconds or null>,
+ "metric": "air_temp_c | air_humi | soil_pct | null",
+ "time_range": "1h | 24h | 7d | 30d | all | null",
+ "missing": [],
+ "ask_back": "<short clarifying question or null>"
+}
+
+If the user asks about past/old data (words like "hôm qua", "hôm kia", "trước đó", "tuần trước", "tháng trước", "gần đây", "lịch sử"):
+- intent = "ask_history"
+- Choose node, metric and time_range based on the question.
+
+Semantic understanding:
+- "tối", "thiếu sáng", "mờ", "u ám" → device_control, target=light, action=on.
+- "sáng", "chói", "nhiều ánh sáng", "hơi sáng", "sáng quá" → device_control, target=light, action=off.
+- "đất khô", "thiếu nước", "tưới", "khô hạn" → device_control, target=pump, action=on.
+- "đủ nước", "ngừng tưới", "nước nhiều", "ẩm ướt" → device_control, target=pump, action=off.
+- Asking about "nhiệt độ", "độ ẩm không khí", "độ ẩm đất" → ask_sensor (metric matched).
+- Asking "đèn/bơm đang bật hay tắt" → ask_device_state.
+
+If farm is not specified:
+- node = null,
+- add "node" to missing,
+- ask_back in Vietnamese like "Bạn muốn vườn A, B, C hay tất cả?"
+
+Return ONLY valid JSON — no markdown, no text outside JSON.`);
+}
+
+async function llmInterpret(userText){
+  const sys=buildSystemPrompt();
+  const messages=[{role:"system",content:sys},...convo.slice(-4),{role:"user",content:userText}];
+  const body={model:MODEL_NAME,messages,temperature:0,response_format:{type:"json_object"}};
+  const res=await fetch("https://api.openai.com/v1/chat/completions",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":`Bearer ${OPENAI_API_KEY}`},
+    body:JSON.stringify(body)
+  });
+  const data=await res.json();
+  let obj;
+  try{obj=JSON.parse(data.choices[0].message.content);}
+  catch{obj={intent:"unknown",ask_back:"Tôi chưa hiểu"};}
+  return obj;
+}
+
+/* ====== LỊCH SỬ JSON ====== */
+
+async function fetchHistoryJson(){
+  try{
+    const res=await fetch(API_JSON_URL+"?action=history",{cache:"no-store"});
+    if(!res.ok)return null;
+    const j=await res.json();
+    return j;
+  }catch(e){
+    return null;
+  }
+}
+
+async function answerHistory(userText,cmd){
+  const hist=await fetchHistoryJson();
+  if(!hist){
+    addMsg("bot","Không đọc được dữ liệu lịch sử.");
+    return;
+  }
+  let histStr;
+  try{histStr=JSON.stringify(hist);}catch(e){histStr="[]";}
+  const maxLen=12000;
+  if(histStr.length>maxLen)histStr=histStr.slice(-maxLen);
+  const sys="Bạn là trợ lý phân tích dữ liệu cho trang trại thông minh (vườn A, B, C). Trả lời tiếng Việt ngắn gọn, tự nhiên, dựa trên JSON lịch sử.";
+  const messages=[
+    {role:"system",content:sys},
+    {role:"user",content:`Câu hỏi của người dùng: ${userText}\n\nDữ liệu lịch sử (JSON, phần cuối là mới nhất):\n${histStr}`}
+  ];
+  const body={model:MODEL_NAME,messages,temperature:0.2};
+  try{
+    const res=await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":`Bearer ${OPENAI_API_KEY}`},
+      body:JSON.stringify(body)
+    });
+    const data=await res.json();
+    const answer=data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+      ? data.choices[0].message.content
+      : "Tạm thời không phân tích được lịch sử.";
+    addMsg("bot",answer);
+    convo.push({role:"assistant",content:answer});
+  }catch(e){
+    addMsg("bot","Lỗi khi gọi GPT để đọc lịch sử.");
+  }
+}
+
+/* ====== THOI TIET (MOI - TACH RIENG, KHONG DUNG PROMPT CU) ====== */
+
+function _norm(s){
+  return (s||"").toLowerCase().trim();
+}
+
+function isWeatherQuestion(text){
+  const t=_norm(text);
+  if(!t)return false;
+  if(t.includes("thời tiết"))return true;
+  if(t.includes("thoi tiet"))return true;
+  if(t.includes("dự báo"))return true;
+  if(t.includes("du bao"))return true;
+  if(t.includes("mưa"))return true;
+  if(t.includes("mua"))return true;
+  if(t.includes("nắng"))return true;
+  if(t.includes("nang"))return true;
+  if(t.includes("bão"))return true;
+  if(t.includes("bao"))return true;
+  return false;
+}
+
+function wantIncludeRainHours(text){
+  const t=_norm(text);
+  if(t.includes("giờ"))return true;
+  if(t.includes("gio"))return true;
+  if(t.includes("khoảng"))return true;
+  if(t.includes("khoang"))return true;
+  if(t.includes("lúc"))return true;
+  if(t.includes("luc"))return true;
+  return false;
+}
+
+function wantDaysCount(text){
+  const t=_norm(text);
+  if(t.includes("mai"))return 2;
+  if(t.includes("ngày mai"))return 2;
+  if(t.includes("ngay mai"))return 2;
+  if(t.includes("tuần"))return 7;
+  if(t.includes("tuan"))return 7;
+  if(t.includes("7 ngày"))return 7;
+  if(t.includes("7 ngay"))return 7;
+  if(t.includes("3 ngày"))return 3;
+  if(t.includes("3 ngay"))return 3;
+  if(t.includes("5 ngày"))return 5;
+  if(t.includes("5 ngay"))return 5;
+  if(t.includes("10 ngày"))return 10;
+  if(t.includes("10 ngay"))return 10;
+  return 3;
+}
+
+async function fetchWeatherOpenMeteo(days){
+  const d = Math.max(1, Math.min(10, Number(days||3)));
+  const url =
+    "https://api.open-meteo.com/v1/forecast"
+    + `?latitude=${encodeURIComponent(WEATHER_LAT)}`
+    + `&longitude=${encodeURIComponent(WEATHER_LON)}`
+    + `&timezone=${encodeURIComponent(WEATHER_TZ)}`
+    + `&forecast_days=${encodeURIComponent(d)}`
+    + "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max"
+    + "&hourly=temperature_2m,relativehumidity_2m,precipitation,precipitation_probability";
+  const res = await fetch(url,{cache:"no-store"});
+  if(!res.ok) return null;
+  const j = await res.json();
+  return j;
+}
+
+function buildDailySummaryLines(w){
+  const out=[];
+  if(!w || !w.daily || !w.daily.time) return out;
+  const t=w.daily.time;
+  const tmax=w.daily.temperature_2m_max || [];
+  const tmin=w.daily.temperature_2m_min || [];
+  const psum=w.daily.precipitation_sum || [];
+  const pmax=w.daily.precipitation_probability_max || [];
+  for(let i=0;i<t.length;i++){
+    const day=t[i];
+    const a = (tmin[i]!==undefined && tmax[i]!==undefined) ? `${tmin[i]}–${tmax[i]}°C` : "--";
+    const b = (pmax[i]!==undefined) ? `${pmax[i]}%` : "--";
+    const c = (psum[i]!==undefined) ? `${psum[i]}mm` : "--";
+    out.push(`${day}: nhiệt độ ${a}, khả năng mưa tối đa ${b}, lượng mưa ${c}`);
+  }
+  return out;
+}
+
+function findRainHourWindowsToday(w){
+  if(!w || !w.hourly || !w.hourly.time) return [];
+  const times=w.hourly.time;
+  const pp=w.hourly.precipitation_probability || [];
+  const pr=w.hourly.precipitation || [];
+  const now=new Date();
+  const y=now.getFullYear();
+  const m=now.getMonth()+1;
+  const d=now.getDate();
+  const mm = (m<10?("0"+m):(""+m));
+  const dd = (d<10?("0"+d):(""+d));
+  const key=`${y}-${mm}-${dd}`;
+  const idx=[];
+  for(let i=0;i<times.length;i++){
+    if(!times[i] || times[i].indexOf(key)!==0) continue;
+    const ppi = Number(pp[i]||0);
+    const pri = Number(pr[i]||0);
+    if(ppi>=50 || pri>0) idx.push(i);
+  }
+  if(idx.length===0) return [];
+  const windows=[];
+  let start=idx[0];
+  let prev=idx[0];
+  for(let k=1;k<idx.length;k++){
+    const cur=idx[k];
+    if(cur===prev+1){
+      prev=cur;
+    }else{
+      windows.push({s:start,e:prev});
+      start=cur;
+      prev=cur;
+    }
+  }
+  windows.push({s:start,e:prev});
+  const out=[];
+  for(let i=0;i<windows.length;i++){
+    const ws=windows[i];
+    const ts=times[ws.s];
+    const te=times[ws.e];
+    const hs = ts ? ts.slice(11,16) : "--:--";
+    const he = te ? te.slice(11,16) : "--:--";
+    out.push(`${hs}–${he}`);
+  }
+  return out;
+}
+
+function getFarmSnapshotText(){
+  const lines=[];
+  if(!globalData || !globalData.sensors){
+    return "Không có dữ liệu cảm biến hiện tại.";
+  }
+  ["A","B","C"].forEach(n=>{
+    const s = globalData.sensors && globalData.sensors[n] ? globalData.sensors[n] : {};
+    const t = (s.air_temp_c!==undefined) ? s.air_temp_c : "--";
+    const h = (s.air_humi!==undefined) ? s.air_humi : "--";
+    const soil = (s.soil_pct!==undefined) ? s.soil_pct : "--";
+    lines.push(`Vườn ${n}: nhiệt độ ${t}°C, ẩm không khí ${h}%, ẩm đất ${soil}%.`);
+  });
+  return lines.join("\n");
+}
+
+async function gptWeatherAnalysis(userText,weatherJson,includeHours){
+  const dailyLines=buildDailySummaryLines(weatherJson);
+  const rainHours = includeHours ? findRainHourWindowsToday(weatherJson) : [];
+  const farmNow = getFarmSnapshotText();
+
+  const sys =
+    "Bạn là trợ lý nông nghiệp. Trả lời tiếng Việt tự nhiên, ngắn gọn nhưng đủ ý. " +
+    "Bạn phải phân tích dự báo thời tiết (theo ngày) và so sánh với ẩm đất hiện tại của 3 vườn A/B/C để kết luận có nên tưới hay không cho từng vườn. " +
+    "Nếu khả năng mưa cao hoặc lượng mưa có, và ẩm đất đang cao thì khuyến nghị không tưới. " +
+    "Nếu khả năng mưa thấp và ẩm đất thấp thì khuyến nghị tưới. " +
+    "Ngưỡng gợi ý: ẩm đất < 40%: khô; 40–60%: bình thường; >60%: ẩm. " +
+    "Trả lời theo bố cục: (1) Thời tiết (theo ngày), (2) So sánh với 3 vườn, (3) Kết luận tưới/không tưới cho từng vườn.";
+
+  const user =
+    `Câu hỏi: ${userText}\n\n` +
+    `Dự báo theo ngày:\n${dailyLines.join("\n")}\n\n` +
+    (includeHours ? `Khung giờ có khả năng mưa hôm nay: ${rainHours.length?rainHours.join(", "):"không rõ/không đáng kể"}\n\n` : "") +
+    `Cảm biến hiện tại:\n${farmNow}\n`;
+
+  const messages=[
+    {role:"system",content:sys},
+    {role:"user",content:user}
+  ];
+
+  const body={model:MODEL_NAME,messages,temperature:0.2};
+  const res=await fetch("https://api.openai.com/v1/chat/completions",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":`Bearer ${OPENAI_API_KEY}`},
+    body:JSON.stringify(body)
+  });
+  const data=await res.json();
+  const answer=data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+    ? data.choices[0].message.content
+    : "Tạm thời không phân tích được thời tiết.";
+  return answer;
+}
+
+async function handleWeather(userText){
+  const days = wantDaysCount(userText);
+  const includeHours = wantIncludeRainHours(userText);
+  const w = await fetchWeatherOpenMeteo(days);
+  if(!w){
+    addMsg("bot","Không lấy được dữ liệu thời tiết.");
+    return;
+  }
+  try{
+    const ans = await gptWeatherAnalysis(userText,w,includeHours);
+    addMsg("bot",ans);
+    convo.push({role:"assistant",content:ans});
+  }catch(e){
+    addMsg("bot","Lỗi khi gọi GPT để phân tích thời tiết.");
+  }
+}
+
+/* ====== SO SANH NHANH (MOI - KHONG DUNG PROMPT) ====== */
+
+function extractNodesFromText(text){
+  const t=_norm(text);
+  const nodes=[];
+  if(t.includes("vườn a") || t.includes("vuon a") || t.includes(" a ")) nodes.push("A");
+  if(t.includes("vườn b") || t.includes("vuon b") || t.includes(" b ")) nodes.push("B");
+  if(t.includes("vườn c") || t.includes("vuon c") || t.includes(" c ")) nodes.push("C");
+  const uniq=[];
+  nodes.forEach(n=>{ if(!uniq.includes(n)) uniq.push(n); });
+  return uniq;
+}
+
+function extractMetricFromText(text){
+  const t=_norm(text);
+  if(t.includes("nhiệt độ") || t.includes("nhiet do")) return "air_temp_c";
+  if(t.includes("độ ẩm đất") || t.includes("do am dat") || t.includes("ẩm đất") || t.includes("am dat")) return "soil_pct";
+  if(t.includes("độ ẩm") || t.includes("do am") || t.includes("ẩm không khí") || t.includes("am khong khi")) return "air_humi";
+  return null;
+}
+
+function metricLabel(metric){
+  if(metric==="air_temp_c") return "Nhiệt độ";
+  if(metric==="air_humi") return "Độ ẩm không khí";
+  if(metric==="soil_pct") return "Độ ẩm đất";
+  return metric;
+}
+
+function metricUnit(metric){
+  if(metric==="air_temp_c") return "°C";
+  if(metric==="air_humi") return "%";
+  if(metric==="soil_pct") return "%";
+  return "";
+}
+
+function tryHandleCompare(userText){
+  const t=_norm(userText);
+  if(!t.includes("so sánh") && !t.includes("so sanh")) return false;
+  const metric = extractMetricFromText(userText);
+  if(!metric) return false;
+  const nodes = extractNodesFromText(userText);
+  if(nodes.length<2) return false;
+  if(!globalData || !globalData.sensors) return false;
+
+  const lines=[];
+  nodes.forEach(n=>{
+    const s = globalData.sensors && globalData.sensors[n] ? globalData.sensors[n] : null;
+    const v = s && s[metric]!==undefined ? s[metric] : null;
+    if(v===null){
+      lines.push(`Vườn ${n}: không có dữ liệu.`);
+    }else{
+      lines.push(`Vườn ${n}: ${v}${metricUnit(metric)}.`);
+    }
+  });
+
+  let best=null;
+  let bestN=null;
+  let nums=[];
+  nodes.forEach(n=>{
+    const s = globalData.sensors && globalData.sensors[n] ? globalData.sensors[n] : null;
+    const v = s && s[metric]!==undefined ? Number(s[metric]) : null;
+    if(v!==null && !isNaN(v)){
+      nums.push({n,v});
+    }
+  });
+  if(nums.length>=2){
+    nums.sort((a,b)=>b.v-a.v);
+    bestN=nums[0].n;
+    best=nums[0].v;
+  }
+
+  let out=`So sánh ${metricLabel(metric)}:\n` + lines.join("\n");
+  if(bestN!==null){
+    out += `\nCao nhất: vườn ${bestN} (${best}${metricUnit(metric)}).`;
+  }
+  addMsg("bot",out);
+  convo.push({role:"assistant",content:out});
+  return true;
+}
+
+/* ====== ÁP DỤNG LỆNH ====== */
+
+async function applyCommand(cmd,rawUserText){
+  if(cmd.missing&&cmd.missing.length>0&&cmd.ask_back){
+    pending={partial:cmd,missing:cmd.missing.slice(0)};
+    addMsg("bot",cmd.ask_back);
+    return;
+  }
+  pending=null;
+
+  if(cmd.intent==="ask_history"){
+    await answerHistory(rawUserText,cmd);
+    return;
+  }
+
+  if(!globalData){
+    addMsg("bot","Chưa có dữ liệu Firebase.");
+    return;
+  }
+
+  if(cmd.intent==="device_control"&&cmd.target&&cmd.action){
+    const nodes=(cmd.node==="ALL")?["A","B","C"]:[cmd.node];
+    nodes.forEach(n=>{
+      if(!["A","B","C"].includes(n))return;
+      if(!globalData.devices)globalData.devices={};
+      if(!globalData.devices[n])globalData.devices[n]={};
+      if(!globalData.devices[n][cmd.target])globalData.devices[n][cmd.target]={state:"off"};
+      const devTarget=globalData.devices[n][cmd.target];
+      devTarget.state=(cmd.action==="on")?"on":"off";
+      globalData.devices[n].mode="man";
+      db.ref("data/devices/"+n).set(globalData.devices[n]);
+    });
+    renderPanel(globalData);
+    addMsg("bot",`Đã ${cmd.action==="on"?"bật":"tắt"} ${cmd.target} ${cmd.node==="ALL"?"cả ba vườn":`vườn ${cmd.node}`}.`);
+    convo.push({role:"assistant",content:`Đã ${cmd.action==="on"?"bật":"tắt"} ${cmd.target} ${cmd.node==="ALL"?"cả ba vườn":`vườn ${cmd.node}`}.`});
+    return;
+  }
+
+  if(cmd.intent==="ask_sensor"&&cmd.metric){
+    const n=(cmd.node==="ALL")?null:cmd.node;
+    if(!n||!globalData.sensors||!globalData.sensors[n]){
+      addMsg("bot","Thiếu vườn A/B/C.");
+      return;
+    }
+    const val=globalData.sensors[n][cmd.metric];
+    const msg=`${metricLabel(cmd.metric)} vườn ${n}: ${val}${metricUnit(cmd.metric)}`;
+    addMsg("bot",msg);
+    convo.push({role:"assistant",content:msg});
+    return;
+  }
+
+  if(cmd.intent==="ask_device_state"&&cmd.target){
+    const n=(cmd.node==="ALL")?null:cmd.node;
+    if(!n||!globalData.devices||!globalData.devices[n]){
+      addMsg("bot","Thiếu vườn A/B/C.");
+      return;
+    }
+    const dev = globalData.devices[n] && globalData.devices[n][cmd.target] ? globalData.devices[n][cmd.target] : null;
+    const st = dev && dev.state ? dev.state : "off";
+    const msg=`${cmd.target} vườn ${n}: ${st}`;
+    addMsg("bot",msg);
+    convo.push({role:"assistant",content:msg});
+    return;
+  }
+
+  addMsg("bot","Không hiểu lệnh.");
+}
+
+/* ====== GỬI TIN ====== */
+
+async function handleSend(){
+  const text=inp.value.trim();
+  if(!text)return;
+  addMsg("user",text);
+  convo.push({role:"user",content:text});
+  inp.value="";
+
+  try{
+    if(isWeatherQuestion(text)){
+      await handleWeather(text);
+      return;
+    }
+
+    if(tryHandleCompare(text)){
+      return;
+    }
+
+    const cmd=await llmInterpret(text);
+    await applyCommand(cmd,text);
+  }catch(e){
+    addMsg("bot","Lỗi khi gọi GPT.");
+  }
+}
+
+send.onclick=handleSend;
+inp.addEventListener("keypress",e=>{if(e.key==="Enter")handleSend();});
+
+/* ====== NÚT CHẾ ĐỘ / SWITCH ====== */
+
+window.setFarmMode=function(node,mode){
+  if(!globalData)globalData={};
+  if(!globalData.devices)globalData.devices={};
+  if(!globalData.devices[node])globalData.devices[node]={};
+  globalData.devices[node].mode=mode;
+  db.ref("data/devices/"+node+"/mode").set(mode);
+  renderPanel(globalData);
+  const msg=`Đã chuyển vườn ${node} sang chế độ ${mode==="auto"?"AUTO (tự động)":"MAN (thủ công)"}.`;
+  addMsg("bot",msg);
+  convo.push({role:"assistant",content:msg});
+};
+
+window.handleSwitchClick=function(node,target,isAutoStr){
+  const isAuto = (isAutoStr==="true");
+  if(isAuto){
+    const msg="Vườn đang ở chế độ AUTO, hãy chuyển sang MAN để bật/tắt thủ công.";
+    addMsg("bot",msg);
+    convo.push({role:"assistant",content:msg});
+    return;
+  }
+  toggleDevice(node,target);
+};
+
+window.toggleDevice=function(node,target){
+  if(!globalData || !globalData.devices || !globalData.devices[node]){
+    const msg="Chưa có thông tin thiết bị vườn.";
+    addMsg("bot",msg);
+    convo.push({role:"assistant",content:msg});
+    return;
+  }
+  if(globalData.devices[node].mode!=="man"){
+    const msg="Vui lòng chuyển vườn sang MAN để điều khiển thủ công.";
+    addMsg("bot",msg);
+    convo.push({role:"assistant",content:msg});
+    return;
+  }
+  if(!globalData.devices[node][target]){
+    globalData.devices[node][target]={state:"off"};
+  }
+  const dev=globalData.devices[node][target];
+  dev.state = dev.state==="on"?"off":"on";
+  db.ref("data/devices/"+node).set(globalData.devices[node]);
+  const ten = target==="pump"?"bơm":"đèn";
+  renderPanel(globalData);
+  const msg=`Đã ${dev.state==="on"?"bật":"tắt"} ${ten} vườn ${node} (MAN).`;
+  addMsg("bot",msg);
+  convo.push({role:"assistant",content:msg});
+};
+
+/* ====== BIỂU ĐỒ ====== */
+
+let farmChart=null;
+let chartFarm="A";
+let chartRange="live";
+
+async function loadHistory(){
+  const hist=await fetchHistoryJson();
+  if(!hist || !Array.isArray(hist))return [];
+  return hist;
+}
+
+function getRangeMs(range){
+  switch(range){
+    case "1p": return 1*60*1000;
+    case "30p": return 30*60*1000;
+    case "1h": return 60*60*1000;
+    case "6h": return 6*60*60*1000;
+    case "12h": return 12*60*60*1000;
+    case "24h": return 24*60*60*1000;
+    default: return null;
+  }
+}
+
+function buildSeriesForFarm(node,historyArr,range){
+  const rangeMs=getRangeMs(range);
+  const now=new Date();
+  const points=[];
+  historyArr.forEach(item=>{
+    if(!item || !item.data)return;
+    const d=item.data;
+    if(!d.sensors || !d.sensors[node])return;
+    const s=d.sensors[node];
+    const tsStr=item.ts_vn || item.ts;
+    if(!tsStr)return;
+    const t=new Date(tsStr);
+    if(isNaN(t.getTime()))return;
+    if(rangeMs!==null){
+      const age=now.getTime()-t.getTime();
+      if(age>rangeMs)return;
+    }
+    const label=t.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit",hour12:false});
+    points.push({
+      label:label,
+      temp:Number(s.air_temp_c||0),
+      humi:Number(s.air_humi||0),
+      soil:Number(s.soil_pct||0)
+    });
+  });
+  const start = points.length>30 ? points.length-30 : 0;
+  const sliced = points.slice(start);
+  const labels=[],temp=[],humi=[],soil=[];
+  sliced.forEach(p=>{
+    labels.push(p.label);
+    temp.push(p.temp);
+    humi.push(p.humi);
+    soil.push(p.soil);
+  });
+  return {labels,temp,humi,soil};
+}
+
+async function updateChart(node){
+  const hist=await loadHistory();
+  const series=buildSeriesForFarm(node,hist,chartRange);
+  const ctx=document.getElementById("farmChart").getContext("2d");
+  if(!farmChart){
+    farmChart=new Chart(ctx,{
+      type:"line",
+      data:{
+        labels:series.labels,
+        datasets:[
+          {label:"Nhiệt độ (°C)",data:series.temp,borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,.15)",tension:.35,fill:true},
+          {label:"Độ ẩm không khí (%)",data:series.humi,borderColor:"#3b82f6",backgroundColor:"rgba(59,130,246,.15)",tension:.35,fill:true},
+          {label:"Độ ẩm đất (%)",data:series.soil,borderColor:"#10b981",backgroundColor:"rgba(16,185,129,.15)",tension:.35,fill:true}
+        ]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        scales:{
+          x:{ticks:{maxTicksLimit:8,color:"#6b7280"},grid:{display:false}},
+          y:{ticks:{color:"#6b7280"},grid:{color:"rgba(148,163,184,.3)"}}
+        },
+        plugins:{
+          legend:{labels:{color:"#374151"}},
+          tooltip:{mode:"index",intersect:false}
+        }
+      }
+    });
+  }else{
+    farmChart.data.labels=series.labels;
+    farmChart.data.datasets[0].data=series.temp;
+    farmChart.data.datasets[1].data=series.humi;
+    farmChart.data.datasets[2].data=series.soil;
+    farmChart.update();
+  }
+}
+
+window.setChartFarm=function(node){
+  chartFarm=node;
+  document.querySelectorAll(".chart-tab-btn").forEach(btn=>{
+    const n=btn.getAttribute("data-node");
+    if(n===node)btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+  updateChart(node);
+};
+
+window.setChartRange=function(range){
+  chartRange=range;
+  document.querySelectorAll(".range-btn").forEach(btn=>{
+    const r=btn.getAttribute("data-range");
+    if(r===range)btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+  updateChart(chartFarm);
+};
+
+setTimeout(()=>{updateChart("A");},1000);
+
+setInterval(()=>{
+  updateChart(chartFarm);
+},1000);
+</script>
+</body>
+</html>
